@@ -1,6 +1,7 @@
 import { state } from '../state.js'
 import { escH, getColor } from '../utils.js'
 import { showToast } from './ui.js'
+import { renderItems } from './items.js'
 
 export function addPerson() {
   const input = document.getElementById('person-input')
@@ -26,6 +27,7 @@ export function removePerson(id) {
     item.assignees = item.assignees.filter(a => a !== id)
   })
   renderPeople()
+  renderItems()
   updateStep1Btn()
 }
 
