@@ -12,7 +12,9 @@ export function getScanData() {
     if (!raw) return { count: 0, resetDate: getCurrentMonth() }
     const data = JSON.parse(raw)
     if (data.resetDate !== getCurrentMonth()) {
-      return { count: 0, resetDate: getCurrentMonth() }
+      const reset = { count: 0, resetDate: getCurrentMonth() }
+      localStorage.setItem(SCAN_KEY, JSON.stringify(reset))
+      return reset
     }
     return data
   } catch {
