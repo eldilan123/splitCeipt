@@ -8,9 +8,18 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: true, message: 'Method not allowed' })
   }
 
+  const ALLOWED_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+  const MAX_IMAGE_B64_LENGTH = 14_000_000 // ~10 MB base64
+
   const { image, mediaType } = req.body ?? {}
   if (!image || !mediaType) {
     return res.status(400).json({ error: true, message: 'image y mediaType son requeridos' })
+  }
+  if (!ALLOWED_MEDIA_TYPES.includes(mediaType)) {
+    return res.status(400).json({ error: true, message: 'Tipo de imagen no soportado. Usa JPG, PNG, WEBP o GIF.' })
+  }
+  if (image.length > MAX_IMAGE_B64_LENGTH) {
+    return res.status(400).json({ error: true, message: 'Imagen muy grande. Máximo 10MB.' })
   }
 
   if (!process.env.ANTHROPIC_API_KEY) {
