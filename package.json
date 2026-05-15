@@ -9,11 +9,14 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "jsdom": "^29.1.1",
     "vite": "5.4.0",
     "vitest": "2.1.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   },
   "engines": {
     "pnpm": ">=9"
