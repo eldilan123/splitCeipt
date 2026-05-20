@@ -79,6 +79,15 @@ export async function scanReceipt() {
     const data = await res.json()
     if (data.error) throw new Error(data.message)
 
+    const itemCount = data.items?.length ?? 0
+    if (itemCount === 0) {
+      document.getElementById('scan-state-area').style.display = 'none'
+      document.getElementById('drop-zone').style.display = 'block'
+      document.getElementById('scan-actions').style.display = 'flex'
+      showToast(data.notes ?? 'No se detectaron items. Intenta con modo manual.', 3500)
+      return
+    }
+
     incrementScan()
     applyAIResult(data)
   } catch (err) {
@@ -126,14 +135,15 @@ function applyAIResult(data) {
   updateStep4Btn()
   goStep(3)
 
+  const itemCount = state.items.length
   const summaryEl = document.getElementById('ai-detected-summary')
   summaryEl.style.display = 'block'
   summaryEl.innerHTML = `
     <div class="ai-summary">
-      <div class="ai-summary-title">✦ IA detectó ${data.items.length} items · ${data.notes ?? 'Revisa y edita si algo está mal'}</div>
+      <div class="ai-summary-title">✦ IA detectó ${itemCount} items · ${data.notes ?? 'Revisa y edita si algo está mal'}</div>
       ${data.subtotal > 0 ? `<div class="ai-summary-row"><span>Subtotal detectado</span><span>${fmt(data.subtotal)}</span></div>` : ''}
       ${data.total > 0 ? `<div class="ai-summary-row"><span>Total detectado</span><span>${fmt(data.total)}</span></div>` : ''}
     </div>`
 
-  showToast(`¡${data.items.length} items detectados! Asigna quién pidió qué`, 3000)
+  showToast(`¡${itemCount} items detectados! Asigna quién pidió qué`, 3000)
 }
