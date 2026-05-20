@@ -61,6 +61,7 @@ Responde SOLO con JSON válido, sin markdown, sin texto extra, exactamente así:
 }
 Reglas:
 - Todos los precios como números sin puntos ni comas ni símbolos de moneda
+- El campo "Valor" o "Total" en recibos colombianos es siempre el precio TOTAL de esa línea (cantidad × precio unitario). Para crear items individuales: precio_unitario = Valor / Cantidad. NUNCA multipliques el Valor por la cantidad — ya está multiplicado. Ejemplo: "3 Cerveza $24.000" → tres items de $8.000 cada uno. Ejemplo: "1 Papas fritas $12.000" → un item de $12.000 exacto.
 - Si un item tiene cantidad mayor a 1 (ej: "2 Limonada de coco $18.000" donde $18.000 es el total), divide el precio total entre la cantidad y crea UNA entrada por unidad con el precio unitario. Ejemplo: 2x Limonada $18.000 → dos items de $9.000 cada uno. NUNCA pongas precio 0 en un item detectado.
 - Si el precio mostrado ya es unitario (ej: "Coca-Cola x2 $4.500 c/u"), multiplica por cantidad para el total y divide de vuelta: cada entrada = $4.500
 - Si la cantidad es 1 (o no hay cantidad indicada), el precio del item es exactamente el que aparece en el recibo — NUNCA lo dupliques ni lo modifiques.
