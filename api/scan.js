@@ -46,6 +46,13 @@ export default async function handler(req, res) {
             },
             {
               type: 'text',
+              // PROMPT MAINTENANCE: The "REGLA CRÍTICA DE PRECIOS" block below uses
+              // imperative + prohibition framing (PROHIBIDO, NUNCA, REGLA CRÍTICA) to
+              // override the model's bias to multiply the Valor column by Cantidad.
+              // Keep the qty=1/2/3 examples together and aligned — fragmenting them
+              // back into scattered rules caused the model to double single-quantity
+              // item prices on real receipts. Expected behavior: precio_unitario
+              // always equals Valor ÷ Cantidad, never Valor × Cantidad.
               text: `Analiza este recibo/cuenta de restaurante y extrae TODA la información.
 Responde SOLO con JSON válido, sin markdown, sin texto extra, exactamente así:
 {
@@ -61,10 +68,18 @@ Responde SOLO con JSON válido, sin markdown, sin texto extra, exactamente así:
 }
 Reglas:
 - Todos los precios como números sin puntos ni comas ni símbolos de moneda
-- El campo "Valor" o "Total" en recibos colombianos es siempre el precio TOTAL de esa línea (cantidad × precio unitario). Para crear items individuales: precio_unitario = Valor / Cantidad. NUNCA multipliques el Valor por la cantidad — ya está multiplicado. Ejemplo: "3 Cerveza $24.000" → tres items de $8.000 cada uno. Ejemplo: "1 Papas fritas $12.000" → un item de $12.000 exacto.
-- Si un item tiene cantidad mayor a 1 (ej: "2 Limonada de coco $18.000" donde $18.000 es el total), divide el precio total entre la cantidad y crea UNA entrada por unidad con el precio unitario. Ejemplo: 2x Limonada $18.000 → dos items de $9.000 cada uno. NUNCA pongas precio 0 en un item detectado.
-- Si el precio mostrado ya es unitario (ej: "Coca-Cola x2 $4.500 c/u"), multiplica por cantidad para el total y divide de vuelta: cada entrada = $4.500
-- Si la cantidad es 1 (o no hay cantidad indicada), el precio del item es exactamente el que aparece en el recibo — NUNCA lo dupliques ni lo modifiques.
+
+REGLA CRÍTICA DE PRECIOS - Lee esto con máxima atención:
+La columna "Valor" en el recibo es SIEMPRE el precio total de esa línea ya calculado. NUNCA lo modifiques.
+- precio_unitario = Valor_de_la_columna ÷ Cantidad
+- "1  Papas fritas  $12.000" → un item, precio: 12000
+- "2  Limonada      $18.000" → dos items, precio: 9000 cada uno
+- "3  Cerveza       $24.000" → tres items, precio: 8000 cada uno
+PROHIBIDO: multiplicar, duplicar o alterar el valor de la columna.
+
+Reglas adicionales:
+- Si el precio mostrado ya es unitario (ej: "Coca-Cola x2 $4.500 c/u"), cada entrada = $4.500
+- NUNCA pongas precio 0 en un item detectado.
 - "PROPINA", "PROPINA SUGERIDA", "TIP", "GRATUITY" siempre van en tip_pct o tip_fixed, NUNCA en tax_pct. "IMPUESTO", "IVA", "TAX" van en tax_pct. Si ves un porcentaje sugerido al final del recibo antes del total, es propina — no impuesto.
 - Si detectas propina como porcentaje, ponla en tip_pct. Si es monto fijo, en tip_fixed
 - Si la imagen no es un recibo, responde con items vacíos y notes explicando
