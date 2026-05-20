@@ -63,6 +63,8 @@ Reglas:
 - Todos los precios como números sin puntos ni comas ni símbolos de moneda
 - Si un item tiene cantidad mayor a 1 (ej: "2 Limonada de coco $18.000" donde $18.000 es el total), divide el precio total entre la cantidad y crea UNA entrada por unidad con el precio unitario. Ejemplo: 2x Limonada $18.000 → dos items de $9.000 cada uno. NUNCA pongas precio 0 en un item detectado.
 - Si el precio mostrado ya es unitario (ej: "Coca-Cola x2 $4.500 c/u"), multiplica por cantidad para el total y divide de vuelta: cada entrada = $4.500
+- Si la cantidad es 1 (o no hay cantidad indicada), el precio del item es exactamente el que aparece en el recibo — NUNCA lo dupliques ni lo modifiques.
+- "PROPINA", "PROPINA SUGERIDA", "TIP", "GRATUITY" siempre van en tip_pct o tip_fixed, NUNCA en tax_pct. "IMPUESTO", "IVA", "TAX" van en tax_pct. Si ves un porcentaje sugerido al final del recibo antes del total, es propina — no impuesto.
 - Si detectas propina como porcentaje, ponla en tip_pct. Si es monto fijo, en tip_fixed
 - Si la imagen no es un recibo, responde con items vacíos y notes explicando
 - Si hay texto ilegible en algún item, usa tu mejor estimación con el nombre "[ilegible]"`
