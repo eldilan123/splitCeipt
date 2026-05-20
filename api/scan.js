@@ -61,7 +61,8 @@ Responde SOLO con JSON válido, sin markdown, sin texto extra, exactamente así:
 }
 Reglas:
 - Todos los precios como números sin puntos ni comas ni símbolos de moneda
-- Si hay items con cantidades (ej "2x Coca-Cola"), créalos como entradas separadas
+- Si un item tiene cantidad mayor a 1 (ej: "2 Limonada de coco $18.000" donde $18.000 es el total), divide el precio total entre la cantidad y crea UNA entrada por unidad con el precio unitario. Ejemplo: 2x Limonada $18.000 → dos items de $9.000 cada uno. NUNCA pongas precio 0 en un item detectado.
+- Si el precio mostrado ya es unitario (ej: "Coca-Cola x2 $4.500 c/u"), multiplica por cantidad para el total y divide de vuelta: cada entrada = $4.500
 - Si detectas propina como porcentaje, ponla en tip_pct. Si es monto fijo, en tip_fixed
 - Si la imagen no es un recibo, responde con items vacíos y notes explicando
 - Si hay texto ilegible en algún item, usa tu mejor estimación con el nombre "[ilegible]"`
@@ -79,6 +80,15 @@ Reglas:
     const text = data.content?.find(b => b.type === 'text')?.text ?? ''
     const clean = text.replace(/```json|```/g, '').trim()
     const parsed = JSON.parse(clean)
+
+    if (Array.isArray(parsed.items)) {
+      parsed.items.forEach(item => {
+        if (!item.price || item.price === 0) {
+          console.warn('scan: item con precio 0 o nulo:', item.name)
+        }
+      })
+    }
+
     return res.status(200).json(parsed)
   } catch (err) {
     console.error('scan error:', err)
