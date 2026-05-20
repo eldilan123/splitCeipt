@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SplitCeipt — Divide el recibo sin dramas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="./style.css"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#E8450A"/>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo">Split<span>Ceipt</span></div>
+      <div class="logo-sub">divide sin dramas</div>
+    </div>
+    <span class="tag tag-green">✓ Sin registro</span>
+  </header>
+
+  <section class="hero">
+    <h1>El recibo.<br/><em>Dividido.</em><br/>En segundos.</h1>
+    <p>Toma foto del recibo, la IA extrae todo automáticamente — o ingrésalo manual. Tú solo dices quién pidió qué.</p>
+  </section>
+
+  <div class="steps-nav">
+    <div class="step-tab active" id="tab-1"><span class="step-num">1</span>Personas</div>
+    <div class="step-tab" id="tab-2"><span class="step-num">2</span>Recibo</div>
+    <div class="step-tab" id="tab-3"><span class="step-num">3</span>Items</div>
+    <div class="step-tab" id="tab-4"><span class="step-num">4</span>Extras</div>
+    <div class="step-tab" id="tab-5"><span class="step-num">5</span>Resultado</div>
+  </div>
+
+  <!-- STEP 1: PERSONAS -->
+  <div class="panel visible" id="panel-1">
+    <div class="card">
+      <div class="card-title">¿Quiénes van a dividir?</div>
+      <div class="people-list" id="people-list"></div>
+      <div class="add-row">
+        <input type="text" id="person-input" placeholder="Nombre (ej. Dilan, Jessi, Carlos...)" maxlength="20"/>
+        <button class="btn btn-primary" id="btn-add-person">+ Agregar</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="btn btn-primary btn-full" id="btn-step2" disabled>Continuar →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: RECIBO -->
+  <div class="panel" id="panel-2">
+    <div class="card">
+      <div class="card-title">¿Cómo quieres ingresar el recibo?</div>
+      <div class="scan-choice">
+        <div class="scan-option" id="opt-scan">
+          <div class="scan-icon">📸</div>
+          <div class="scan-label">Escanear recibo</div>
+          <div class="scan-desc">Toma foto o sube imagen — la IA extrae los items automáticamente</div>
+        </div>
+        <div class="scan-option" id="opt-manual">
+          <div class="scan-icon">✏️</div>
+          <div class="scan-label">Ingresar manual</div>
+          <div class="scan-desc">Escribe los items y precios uno por uno</div>
+        </div>
+      </div>
+      <div id="scan-area" style="display:none; margin-top:16px;">
+        <div class="info-box">La IA detectará items, precios, propina, impuestos y descuentos del recibo. Puedes editar todo después.</div>
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept="image/*" capture="environment"/>
+          <div class="drop-icon">🧾</div>
+          <div class="drop-text">Toca para tomar foto o subir imagen</div>
+          <div class="drop-sub">JPG, PNG, WEBP · máx 10MB</div>
+          <img id="preview-img" class="preview-img" style="display:none;" alt=""/>
+        </div>
+        <div id="scan-state-area" style="display:none;">
+          <div class="scan-state">
+            <div class="scan-spinner"></div>
+            <div class="scan-msg" id="scan-msg">Analizando recibo...</div>
+            <div class="scan-submsg" id="scan-submsg">La IA está leyendo los items y precios</div>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;" id="scan-actions">
+          <button class="btn btn-ai btn-full" id="btn-scan" disabled>✦ Extraer con IA</button>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="btn btn-secondary" id="btn-back-to-1">← Atrás</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" id="btn-step3-from2">Continuar manual →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: ITEMS -->
+  <div class="panel" id="panel-3">
+    <div class="card">
+      <div class="card-title">Items del recibo</div>
+      <div id="ai-detected-summary" style="display:none;"></div>
+      <div class="warn-box" id="items-hint">Selecciona quién pidió cada item. Si fue compartido, selecciona a todos — se divide automáticamente.</div>
+      <div class="items-list" id="items-list">
+        <div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">Agrega el primer item</div></div>
+      </div>
+      <div class="add-item-row">
+        <input type="text" id="item-name-input" placeholder="Nombre del item" maxlength="40"/>
+        <div class="currency-input">
+          <span>$</span>
+          <input type="number" id="item-price-input" class="item-price-input" placeholder="0" min="0" step="100"/>
+        </div>
+        <button class="btn btn-primary" id="btn-add-item">+</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="btn btn-secondary" id="btn-back-to-2">← Atrás</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" id="btn-step4" disabled>Continuar →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: EXTRAS -->
+  <div class="panel" id="panel-4">
+    <div class="card">
+      <div class="card-title">Extras</div>
+      <div id="ai-extras-note" style="display:none;" class="info-box"></div>
+      <div class="extras-grid">
+        <div class="extra-field">
+          <label>Propina %</label>
+          <input type="number" id="tip-pct" placeholder="0" min="0" max="100" value="0"/>
+        </div>
+        <div class="extra-field">
+          <label>Propina fija $</label>
+          <div class="currency-input"><span>$</span>
+            <input type="number" id="tip-fixed" placeholder="0" min="0" value="0"/>
+          </div>
+        </div>
+        <div class="extra-field">
+          <label>Descuento $</label>
+          <div class="currency-input"><span>$</span>
+            <input type="number" id="discount" placeholder="0" min="0" value="0"/>
+          </div>
+        </div>
+        <div class="extra-field">
+          <label>Impuesto %</label>
+          <input type="number" id="tax-pct" placeholder="0" min="0" max="50" value="0"/>
+        </div>
+      </div>
+      <hr class="divider"/>
+      <div id="extras-preview" style="font-size:13px;color:var(--ink2);"></div>
+    </div>
+    <div class="bottom-nav">
+      <button class="btn btn-secondary" id="btn-back-to-3">← Atrás</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" id="btn-calculate">Ver resultado →</button>
+    </div>
+  </div>
+
+  <!-- STEP 5: RESULTADO -->
+  <div class="panel" id="panel-5">
+    <div id="result-content"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;padding-bottom:48px;">
+      <button class="btn btn-secondary" style="flex:1;justify-content:center;" id="btn-edit-result">← Editar</button>
+      <button class="btn btn-ghost" style="flex:1;justify-content:center;" id="btn-reset">Nueva división</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script type="module" src="./main.js"></script>
+</body>
+</html>
