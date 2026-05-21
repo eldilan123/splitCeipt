@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SplitCeipt — Divide el recibo sin dramas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #F5F2EC; --surface: #FDFBF7; --surface2: #F0EDE5;
+  --ink: #1A1814; --ink2: #6B6760; --ink3: #A8A49E;
+  --accent: #E8450A; --accent2: #FF6B35;
+  --green: #1A7A4A; --green-bg: #E8F5EE;
+  --purple: #7B5CF5; --purple-bg: #F0EEFF;
+  --border: rgba(26,24,20,0.1); --border2: rgba(26,24,20,0.06);
+  --radius: 16px; --radius-sm: 10px;
+  --shadow: 0 2px 12px rgba(26,24,20,0.08);
+}
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; font-size: 15px; }
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0; opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
+.wrap { max-width: 640px; margin: 0 auto; padding: 0 16px; position: relative; z-index: 1; }
+
+/* HEADER */
+header { padding: 36px 0 28px; display: flex; align-items: center; justify-content: space-between; }
+.logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+.logo span { color: var(--accent); }
+.logo-sub { font-size: 12px; color: var(--ink3); font-weight: 400; margin-top: 1px; }
+
+/* HERO */
+.hero { padding: 8px 0 40px; }
+.hero h1 { font-family: 'Syne', sans-serif; font-size: clamp(32px, 7vw, 52px); font-weight: 800; line-height: 1.08; letter-spacing: -1.5px; }
+.hero h1 em { color: var(--accent); font-style: normal; }
+.hero p { margin-top: 14px; font-size: 16px; color: var(--ink2); font-weight: 300; line-height: 1.6; max-width: 440px; }
+
+/* STEPS */
+.steps-nav { display: flex; margin-bottom: 32px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+.step-tab { flex: 1; padding: 14px 8px; text-align: center; font-size: 12px; font-weight: 500; color: var(--ink3); cursor: pointer; transition: all 0.2s; border-right: 1px solid var(--border); }
+.step-tab:last-child { border-right: none; }
+.step-tab.active { background: var(--ink); color: #fff; }
+.step-tab.done { color: var(--green); }
+.step-tab .step-num { display: block; font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+
+/* PANELS */
+.panel { display: none; }
+.panel.visible { display: block; animation: fadeUp 0.3s ease; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* CARDS */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow); }
+.card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink3); margin-bottom: 16px; }
+
+/* PEOPLE */
+.people-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; min-height: 40px; }
+.person-chip { display: flex; align-items: center; gap: 6px; background: var(--surface2); border: 1px solid var(--border); border-radius: 99px; padding: 6px 12px 6px 8px; font-size: 13px; font-weight: 500; }
+.person-avatar { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.person-chip .remove { background: none; border: none; cursor: pointer; color: var(--ink3); font-size: 14px; padding: 0 0 0 2px; }
+.person-chip .remove:hover { color: var(--accent); }
+.add-row { display: flex; gap: 8px; }
+
+/* INPUTS */
+input[type=text], input[type=number] {
+  width: 100%; padding: 11px 14px; border: 1px solid var(--border);
+  border-radius: var(--radius-sm); background: var(--bg);
+  font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--ink);
+  outline: none; transition: border-color 0.15s;
+}
+input:focus { border-color: var(--accent); }
+input::placeholder { color: var(--ink3); }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 11px 20px; border-radius: var(--radius-sm); border: none; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; transition: all 0.15s; }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); transform: translateY(-1px); }
+.btn-secondary { background: var(--surface2); color: var(--ink); border: 1px solid var(--border); }
+.btn-secondary:hover { background: var(--surface); border-color: var(--ink3); }
+.btn-ghost { background: transparent; color: var(--ink2); border: 1px solid var(--border); font-size: 13px; padding: 8px 14px; }
+.btn-ghost:hover { background: var(--surface2); }
+.btn-ai { background: var(--purple); color: #fff; }
+.btn-ai:hover { background: #6A4EE0; transform: translateY(-1px); }
+.btn-full { width: 100%; justify-content: center; padding: 14px; font-size: 15px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; }
+
+/* ── SCAN ZONE ── */
+.scan-choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 0; }
+.scan-option {
+  border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 24px 16px;
+  text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface);
+}
+.scan-option:hover { border-color: var(--purple); background: var(--purple-bg); }
+.scan-option.active { border-color: var(--purple); border-style: solid; background: var(--purple-bg); }
+.scan-icon { font-size: 28px; margin-bottom: 8px; }
+.scan-label { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.scan-desc { font-size: 12px; color: var(--ink3); line-height: 1.4; }
+.scan-divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+.scan-divider span { font-size: 12px; color: var(--ink3); white-space: nowrap; }
+.scan-divider::before, .scan-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* UPLOAD DROP ZONE */
+.drop-zone {
+  border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 32px 20px;
+  text-align: center; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden;
+}
+.drop-zone:hover, .drop-zone.dragover { border-color: var(--purple); background: var(--purple-bg); }
+.drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.drop-icon { font-size: 36px; margin-bottom: 10px; }
+.drop-text { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.drop-sub { font-size: 12px; color: var(--ink3); }
+.preview-img { width: 100%; max-height: 220px; object-fit: contain; border-radius: var(--radius-sm); margin-top: 12px; border: 1px solid var(--border); }
+
+/* AI SCANNING STATE */
+.scan-state { text-align: center; padding: 32px 20px; }
+.scan-spinner { width: 48px; height: 48px; margin: 0 auto 16px; position: relative; }
+.scan-spinner::before, .scan-spinner::after {
+  content: ''; position: absolute; border-radius: 50%; border: 3px solid transparent;
+}
+.scan-spinner::before { inset: 0; border-top-color: var(--purple); animation: spin 0.9s linear infinite; }
+.scan-spinner::after { inset: 6px; border-top-color: var(--accent); animation: spin 0.7s linear infinite reverse; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.scan-msg { font-size: 14px; color: var(--ink2); }
+.scan-submsg { font-size: 12px; color: var(--ink3); margin-top: 4px; }
+
+/* ITEMS */
+.items-list { display: flex; flex-direction: column; gap: 10px; }
+.item-row { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.item-row.ai-added { border-color: rgba(123,92,245,0.3); }
+.item-main { display: grid; grid-template-columns: 1fr 90px 36px; gap: 8px; align-items: center; padding: 10px 12px; }
+.item-name-input { border: none; background: transparent; padding: 0; font-size: 14px; font-weight: 500; color: var(--ink); }
+.item-name-input:focus { outline: none; color: var(--accent); }
+.item-price-input { border: 1px solid var(--border2); background: var(--bg); border-radius: 8px; text-align: right; padding: 7px 10px; font-size: 14px; }
+.item-remove { background: none; border: none; cursor: pointer; color: var(--ink3); font-size: 18px; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.item-remove:hover { background: var(--surface2); color: var(--accent); }
+.item-assignees { padding: 8px 12px 10px; border-top: 1px solid var(--border2); display: flex; flex-wrap: wrap; gap: 6px; }
+.assignee-btn { padding: 4px 10px; border-radius: 99px; border: 1px solid var(--border); background: var(--bg); font-size: 12px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 4px; color: var(--ink2); }
+.assignee-btn.assigned { border-color: transparent; color: #fff; font-weight: 500; }
+.assignee-dot { width: 8px; height: 8px; border-radius: 50%; }
+.ai-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; background: var(--purple-bg); color: var(--purple); border-radius: 6px; padding: 2px 6px; margin-left: 6px; font-weight: 600; }
+.add-item-row { display: grid; grid-template-columns: 1fr 90px auto; gap: 8px; align-items: center; margin-top: 12px; }
+
+/* EXTRAS */
+.extras-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.extra-field label { display: block; font-size: 12px; color: var(--ink3); margin-bottom: 5px; font-weight: 500; }
+.currency-input { position: relative; }
+.currency-input span { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink3); font-size: 13px; }
+.currency-input input { padding-left: 24px; }
+
+/* RESULT */
+.result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+.result-icon { width: 44px; height: 44px; background: var(--green-bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.result-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; }
+.result-sub { font-size: 13px; color: var(--ink2); }
+.person-result { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; margin-bottom: 10px; }
+.person-result-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; cursor: pointer; }
+.person-result-left { display: flex; align-items: center; gap: 10px; }
+.person-result-name { font-weight: 500; font-size: 15px; }
+.person-total { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+.person-result-items { padding: 0 16px 12px; border-top: 1px solid var(--border2); display: none; }
+.result-item-line { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; color: var(--ink2); border-bottom: 1px solid var(--border2); }
+.result-item-line:last-child { border-bottom: none; }
+.result-item-amount { font-weight: 500; color: var(--ink); }
+.total-bar { background: var(--ink); color: #fff; border-radius: var(--radius-sm); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-top: 16px; }
+.total-bar-label { font-size: 13px; opacity: 0.7; }
+.total-bar-amount { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; }
+.share-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+
+/* MISC */
+.empty { text-align: center; padding: 28px; color: var(--ink3); }
+.empty-icon { font-size: 32px; margin-bottom: 8px; }
+.empty-text { font-size: 13px; }
+.bottom-nav { display: flex; gap: 8px; margin-top: 24px; padding-bottom: 48px; }
+.tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+.tag-green { background: var(--green-bg); color: var(--green); }
+.tag-purple { background: var(--purple-bg); color: var(--purple); }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 99px; font-size: 13px; font-weight: 500; z-index: 1000; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); pointer-events: none; white-space: nowrap; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.info-box { background: var(--purple-bg); border: 1px solid rgba(123,92,245,0.2); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 12px; color: #5A3ECC; line-height: 1.5; margin-bottom: 16px; }
+.warn-box { background: #FEF9F0; border: 1px solid #F5D49A; border-radius: var(--radius-sm); padding: 12px 16px; font-size: 12px; color: #8A6A1A; line-height: 1.5; margin-bottom: 16px; }
+hr.divider { border: none; border-top: 1px solid var(--border2); margin: 14px 0; }
+
+/* AI DETECTED SUMMARY */
+.ai-summary { background: var(--purple-bg); border: 1px solid rgba(123,92,245,0.25); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 14px; }
+.ai-summary-title { font-size: 12px; font-weight: 600; color: var(--purple); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.ai-summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 3px 0; }
+.ai-summary-row span:last-child { font-weight: 500; }
+
+@media (max-width: 480px) {
+  .scan-choice { grid-template-columns: 1fr; }
+  .extras-grid { grid-template-columns: 1fr; }
+  .share-grid { grid-template-columns: 1fr; }
+  .add-item-row { grid-template-columns: 1fr 80px auto; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="logo">Split<span>Ceipt</span></div>
+      <div class="logo-sub">divide sin dramas</div>
+    </div>
+    <span class="tag tag-green">✓ Sin registro</span>
+  </header>
+
+  <section class="hero">
+    <h1>El recibo.<br/><em>Dividido.</em><br/>En segundos.</h1>
+    <p>Toma foto del recibo, la IA extrae todo automáticamente — o ingrésalo manual. Tú solo dices quién pidió qué.</p>
+  </section>
+
+  <!-- STEPS NAV -->
+  <div class="steps-nav">
+    <div class="step-tab active" id="tab-1" onclick="goStep(1)"><span class="step-num">1</span>Personas</div>
+    <div class="step-tab" id="tab-2" onclick="goStep(2)"><span class="step-num">2</span>Recibo</div>
+    <div class="step-tab" id="tab-3" onclick="goStep(3)"><span class="step-num">3</span>Items</div>
+    <div class="step-tab" id="tab-4" onclick="goStep(4)"><span class="step-num">4</span>Extras</div>
+    <div class="step-tab" id="tab-5" onclick="goStep(5)"><span class="step-num">5</span>Resultado</div>
+  </div>
+
+  <!-- ── STEP 1: PERSONAS ── -->
+  <div class="panel visible" id="panel-1">
+    <div class="card">
+      <div class="card-title">¿Quiénes van a dividir?</div>
+      <div class="people-list" id="people-list"></div>
+      <div class="add-row">
+        <input type="text" id="person-input" placeholder="Nombre (ej. Dilan, Jessi, Carlos...)" maxlength="20" onkeydown="if(event.key==='Enter')addPerson()"/>
+        <button class="btn btn-primary" onclick="addPerson()">+ Agregar</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="btn btn-primary btn-full" onclick="goStep(2)" id="btn-step2" disabled>Continuar →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 2: RECIBO (SCAN O MANUAL) ── -->
+  <div class="panel" id="panel-2">
+    <div class="card">
+      <div class="card-title">¿Cómo quieres ingresar el recibo?</div>
+      <div class="scan-choice">
+        <div class="scan-option" id="opt-scan" onclick="selectMode('scan')">
+          <div class="scan-icon">📸</div>
+          <div class="scan-label">Escanear recibo</div>
+          <div class="scan-desc">Toma foto o sube imagen — la IA extrae los items automáticamente</div>
+        </div>
+        <div class="scan-option" id="opt-manual" onclick="selectMode('manual')">
+          <div class="scan-icon">✏️</div>
+          <div class="scan-label">Ingresar manual</div>
+          <div class="scan-desc">Escribe los items y precios uno por uno</div>
+        </div>
+      </div>
+
+      <!-- MODO SCAN -->
+      <div id="scan-area" style="display:none; margin-top:16px;">
+        <div class="info-box">La IA detectará items, precios, propina, impuestos y descuentos del recibo. Puedes editar todo después.</div>
+        <div class="drop-zone" id="drop-zone" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onDrop(event)">
+          <input type="file" id="file-input" accept="image/*" capture="environment" onchange="onFileSelected(event)"/>
+          <div class="drop-icon">🧾</div>
+          <div class="drop-text">Toca para tomar foto o subir imagen</div>
+          <div class="drop-sub">JPG, PNG, WEBP · máx 10MB</div>
+          <img id="preview-img" class="preview-img" style="display:none;"/>
+        </div>
+        <div id="scan-state-area" style="display:none;">
+          <div class="scan-state">
+            <div class="scan-spinner"></div>
+            <div class="scan-msg" id="scan-msg">Analizando recibo...</div>
+            <div class="scan-submsg" id="scan-submsg">La IA está leyendo los items y precios</div>
+          </div>
+        </div>
+        <div style="margin-top:12px; display:flex; gap:8px;" id="scan-actions" style="display:none;">
+          <button class="btn btn-ai btn-full" id="btn-scan" onclick="scanReceipt()" disabled>
+            ✦ Extraer con IA
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="btn btn-secondary" onclick="goStep(1)">← Atrás</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="goStep(3)" id="btn-step3-from2">Continuar manual →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 3: ITEMS ── -->
+  <div class="panel" id="panel-3">
+    <div class="card">
+      <div class="card-title">Items del recibo</div>
+      <div id="ai-detected-summary" style="display:none;"></div>
+      <div class="warn-box" id="items-hint">Selecciona quién pidió cada item. Si fue compartido, selecciona a todos — se divide automáticamente.</div>
+      <div class="items-list" id="items-list">
+        <div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">Agrega el primer item</div></div>
+      </div>
+      <div class="add-item-row">
+        <input type="text" id="item-name-input" placeholder="Nombre del item" maxlength="40" onkeydown="if(event.key==='Enter')focusPrice()"/>
+        <div class="currency-input">
+          <span>$</span>
+          <input type="number" id="item-price-input" class="item-price-input" placeholder="0" min="0" step="100" onkeydown="if(event.key==='Enter')addItem()"/>
+        </div>
+        <button class="btn btn-primary" onclick="addItem()">+</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="btn btn-secondary" onclick="goStep(2)">← Atrás</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="goStep(4)" id="btn-step4" disabled>Continuar →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 4: EXTRAS ── -->
+  <div class="panel" id="panel-4">
+    <div class="card">
+      <div class="card-title">Extras</div>
+      <div id="ai-extras-note" style="display:none;" class="info-box"></div>
+      <div class="extras-grid">
+        <div class="extra-field">
+          <label>Propina %</label>
+          <input type="number" id="tip-pct" placeholder="0" min="0" max="100" value="0" oninput="updateExtrasPreview()"/>
+        </div>
+        <div class="extra-field">
+          <label>Propina fija $</label>
+          <div class="currency-input"><span>$</span>
+            <input type="number" id="tip-fixed" placeholder="0" min="0" value="0" oninput="updateExtrasPreview()"/>
+          </div>
+        </div>
+        <div class="extra-field">
+          <label>Descuento $</label>
+          <div class="currency-input"><span>$</span>
+            <input type="number" id="discount" placeholder="0" min="0" value="0" oninput="updateExtrasPreview()"/>
+          </div>
+        </div>
+        <div class="extra-field">
+          <label>Impuesto %</label>
+          <input type="number" id="tax-pct" placeholder="0" min="0" max="50" value="0" oninput="updateExtrasPreview()"/>
+        </div>
+      </div>
+      <hr class="divider"/>
+      <div id="extras-preview" style="font-size:13px;color:var(--ink2);"></div>
+    </div>
+    <div class="bottom-nav">
+      <button class="btn btn-secondary" onclick="goStep(3)">← Atrás</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;" onclick="calculate()">Ver resultado →</button>
+    </div>
+  </div>
+
+  <!-- ── STEP 5: RESULTADO ── -->
+  <div class="panel" id="panel-5">
+    <div id="result-content"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;padding-bottom:48px;">
+      <button class="btn btn-secondary" onclick="goStep(3)" style="flex:1;justify-content:center;">← Editar</button>
+      <button class="btn btn-ghost" onclick="resetAll()" style="flex:1;justify-content:center;">Nueva división</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COLORS = ['#E8450A','#1A7A4A','#7B5CF5','#C4861A','#1A6B9A','#A3459A','#2E8B57','#CC3A4A'];
+let state = { people: [], items: [], scanMode: null, imageBase64: null, imageType: null, aiExtracted: false };
+let currentStep = 1;
+
+function getColor(i) { return COLORS[i % COLORS.length]; }
+function fmt(n) { return '$' + Math.round(n).toLocaleString('es-CO'); }
+function escH(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function showToast(msg, dur=2200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function goStep(n) {
+  if (n > 1 && state.people.length < 2) { showToast('Agrega al menos 2 personas'); return; }
+  if (n > 3 && state.items.length === 0) { showToast('Agrega al menos un item'); return; }
+  if (n === 5) { calculate(); return; }
+  currentStep = n;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+  document.getElementById('panel-' + n).classList.add('visible');
+  document.querySelectorAll('.step-tab').forEach((t, i) => {
+    t.classList.remove('active','done');
+    if (i+1 === n) t.classList.add('active');
+    else if (i+1 < n) t.classList.add('done');
+  });
+  if (n === 4) updateExtrasPreview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── PEOPLE ──
+function addPerson() {
+  const input = document.getElementById('person-input');
+  const name = input.value.trim();
+  if (!name) return;
+  if (state.people.find(p => p.name.toLowerCase() === name.toLowerCase())) { showToast('Ya está en la lista'); return; }
+  if (state.people.length >= 10) { showToast('Máximo 10 personas'); return; }
+  state.people.push({ id: Date.now(), name, color: getColor(state.people.length) });
+  input.value = ''; renderPeople(); updateStep1Btn();
+}
+function removePerson(id) {
+  state.people = state.people.filter(p => p.id !== id);
+  state.items.forEach(item => { item.assignees = item.assignees.filter(a => a !== id); });
+  renderPeople(); renderItems(); updateStep1Btn();
+}
+function renderPeople() {
+  const list = document.getElementById('people-list');
+  list.innerHTML = state.people.map(p => `
+    <div class="person-chip">
+      <div class="person-avatar" style="background:${p.color}">${p.name[0].toUpperCase()}</div>
+      <span>${escH(p.name)}</span>
+      <button class="remove" onclick="removePerson(${p.id})">×</button>
+    </div>`).join('');
+}
+function updateStep1Btn() {
+  document.getElementById('btn-step2').disabled = state.people.length < 2;
+}
+
+// ── SCAN MODE SELECTION ──
+function selectMode(mode) {
+  state.scanMode = mode;
+  document.getElementById('opt-scan').classList.toggle('active', mode === 'scan');
+  document.getElementById('opt-manual').classList.toggle('active', mode === 'manual');
+  document.getElementById('scan-area').style.display = mode === 'scan' ? 'block' : 'none';
+  const btn = document.getElementById('btn-step3-from2');
+  btn.textContent = mode === 'manual' ? 'Continuar manual →' : 'Continuar sin escanear →';
+}
+
+// ── FILE HANDLING ──
+function onDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
+function onDragLeave(e) { document.getElementById('drop-zone').classList.remove('dragover'); }
+function onDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file);
+}
+function onFileSelected(e) {
+  const file = e.target.files[0];
+  if (file) loadFile(file);
+}
+function loadFile(file) {
+  if (!file.type.startsWith('image/')) { showToast('Solo imágenes (JPG, PNG, WEBP)'); return; }
+  if (file.size > 10 * 1024 * 1024) { showToast('Imagen muy grande, máx 10MB'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const dataUrl = e.target.result;
+    state.imageBase64 = dataUrl.split(',')[1];
+    state.imageType = file.type;
+    const img = document.getElementById('preview-img');
+    img.src = dataUrl; img.style.display = 'block';
+    document.getElementById('scan-actions').style.display = 'flex';
+    document.getElementById('btn-scan').disabled = false;
+    document.querySelector('.drop-icon').style.display = 'none';
+    document.querySelector('.drop-text').style.display = 'none';
+    document.querySelector('.drop-sub').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── AI SCAN ──
+async function scanReceipt() {
+  if (!state.imageBase64) return;
+  document.getElementById('scan-actions').style.display = 'none';
+  document.getElementById('drop-zone').style.display = 'none';
+  document.getElementById('scan-state-area').style.display = 'block';
+
+  const msgs = [
+    ['Detectando items del recibo...', 'Identificando productos y precios'],
+    ['Calculando totales...', 'Buscando propina, descuentos e impuestos'],
+    ['Casi listo...', 'Organizando la información']
+  ];
+  let mi = 0;
+  const interval = setInterval(() => {
+    mi = (mi+1) % msgs.length;
+    document.getElementById('scan-msg').textContent = msgs[mi][0];
+    document.getElementById('scan-submsg').textContent = msgs[mi][1];
+  }, 1800);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: state.imageType, data: state.imageBase64 }
+            },
+            {
+              type: 'text',
+              text: `Analiza este recibo/cuenta de restaurante y extrae TODA la información. 
+Responde SOLO con JSON válido, sin markdown, sin texto extra, exactamente así:
+{
+  "items": [
+    {"name": "nombre del item", "price": 12500}
+  ],
+  "tip_pct": 0,
+  "tip_fixed": 0,
+  "tax_pct": 0,
+  "discount": 0,
+  "subtotal": 0,
+  "total": 0,
+  "currency": "COP",
+  "notes": "observación breve si hay algo relevante o si la imagen no es clara"
+}
+
+Reglas:
+- Todos los precios como números sin puntos ni comas ni símbolos de moneda
+- Si hay items con cantidades (ej "2x Coca-Cola"), créalos como entradas separadas o multiplica el precio
+- Si detectas propina como porcentaje, ponla en tip_pct. Si es monto fijo, en tip_fixed
+- Si la imagen no es un recibo, responde con items vacíos y notes explicando
+- Si hay texto ilegible en algún item, usa tu mejor estimación con el nombre "[ilegible]"`
+            }
+          ]
+        }]
+      })
+    });
+    clearInterval(interval);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content.find(b => b.type === 'text')?.text || '';
+    const clean = text.replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(clean);
+    applyAIResult(parsed);
+  } catch(err) {
+    clearInterval(interval);
+    document.getElementById('scan-state-area').style.display = 'none';
+    document.getElementById('drop-zone').style.display = 'block';
+    document.getElementById('scan-actions').style.display = 'flex';
+    showToast('Error al escanear. Intenta de nuevo o usa modo manual.', 3500);
+    console.error(err);
+  }
+}
+
+function applyAIResult(data) {
+  document.getElementById('scan-state-area').style.display = 'none';
+
+  // Load items
+  if (data.items && data.items.length > 0) {
+    state.items = data.items.map(it => ({
+      id: Date.now() + Math.random(),
+      name: it.name || 'Item',
+      price: parseFloat(it.price) || 0,
+      assignees: [],
+      aiAdded: true
+    }));
+    state.aiExtracted = true;
+  }
+
+  // Load extras
+  if (data.tip_pct > 0) document.getElementById('tip-pct').value = data.tip_pct;
+  if (data.tip_fixed > 0) document.getElementById('tip-fixed').value = data.tip_fixed;
+  if (data.tax_pct > 0) document.getElementById('tax-pct').value = data.tax_pct;
+  if (data.discount > 0) document.getElementById('discount').value = data.discount;
+
+  // Show AI extras note
+  const hasExtras = data.tip_pct > 0 || data.tip_fixed > 0 || data.tax_pct > 0 || data.discount > 0;
+  if (hasExtras) {
+    const noteEl = document.getElementById('ai-extras-note');
+    noteEl.style.display = 'block';
+    let parts = [];
+    if (data.tip_pct > 0) parts.push(`propina ${data.tip_pct}%`);
+    if (data.tip_fixed > 0) parts.push(`propina fija $${data.tip_fixed}`);
+    if (data.tax_pct > 0) parts.push(`impuesto ${data.tax_pct}%`);
+    if (data.discount > 0) parts.push(`descuento $${data.discount}`);
+    noteEl.textContent = `✦ La IA detectó: ${parts.join(', ')}. Verifica que sean correctos.`;
+  }
+
+  // Go to items step
+  renderItems();
+  currentStep = 3;
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'));
+  document.getElementById('panel-3').classList.add('visible');
+  document.querySelectorAll('.step-tab').forEach((t,i) => {
+    t.classList.remove('active','done');
+    if (i+1 === 3) t.classList.add('active');
+    else if (i+1 < 3) t.classList.add('done');
+  });
+
+  // Show AI summary
+  const summaryEl = document.getElementById('ai-detected-summary');
+  summaryEl.style.display = 'block';
+  summaryEl.innerHTML = `
+    <div class="ai-summary">
+      <div class="ai-summary-title">✦ IA detectó ${data.items.length} items · ${data.notes ? data.notes : 'Revisa y edita si algo está mal'}</div>
+      ${data.subtotal > 0 ? `<div class="ai-summary-row"><span>Subtotal detectado</span><span>${fmt(data.subtotal)}</span></div>` : ''}
+      ${data.total > 0 ? `<div class="ai-summary-row"><span>Total detectado</span><span>${fmt(data.total)}</span></div>` : ''}
+    </div>`;
+  updateStep4Btn();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast(`¡${data.items.length} items detectados! Asigna quién pidió qué`, 3000);
+}
+
+// ── ITEMS ──
+function focusPrice() { document.getElementById('item-price-input').focus(); }
+
+function addItem() {
+  const nameEl = document.getElementById('item-name-input');
+  const priceEl = document.getElementById('item-price-input');
+  const name = nameEl.value.trim();
+  const price = parseFloat(priceEl.value);
+  if (!name || isNaN(price) || price <= 0) { showToast('Escribe nombre y precio'); return; }
+  state.items.push({ id: Date.now(), name, price, assignees: [], aiAdded: false });
+  nameEl.value = ''; priceEl.value = ''; nameEl.focus();
+  renderItems(); updateStep4Btn();
+}
+function removeItem(id) {
+  state.items = state.items.filter(i => i.id !== id);
+  renderItems(); updateStep4Btn();
+}
+function toggleAssignee(itemId, personId) {
+  const item = state.items.find(i => i.id == itemId);
+  if (!item) return;
+  const idx = item.assignees.indexOf(personId);
+  if (idx === -1) item.assignees.push(personId);
+  else item.assignees.splice(idx, 1);
+  renderItems();
+}
+function renameItem(id, val) { const i = state.items.find(x => x.id == id); if (i) i.name = val.trim(); }
+function repriceItem(id, val) { const i = state.items.find(x => x.id == id); if (i && parseFloat(val) > 0) i.price = parseFloat(val); }
+
+function renderItems() {
+  const list = document.getElementById('items-list');
+  if (state.items.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="empty-icon">🧾</div><div class="empty-text">Agrega el primer item</div></div>';
+    return;
+  }
+  list.innerHTML = state.items.map(item => `
+    <div class="item-row ${item.aiAdded ? 'ai-added' : ''}">
+      <div class="item-main">
+        <div style="display:flex;align-items:center;gap:0;">
+          <input class="item-name-input" value="${escH(item.name)}" onchange="renameItem(${item.id},this.value)" type="text" maxlength="40" style="flex:1;"/>
+          ${item.aiAdded ? '<span class="ai-badge">✦ IA</span>' : ''}
+        </div>
+        <div class="currency-input" style="position:relative;">
+          <span style="position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:12px;">$</span>
+          <input class="item-price-input" value="${item.price}" onchange="repriceItem(${item.id},this.value)" type="number" min="0" style="padding-left:20px;font-size:13px;padding-top:6px;padding-bottom:6px;"/>
+        </div>
+        <button class="item-remove" onclick="removeItem(${item.id})">×</button>
+      </div>
+      <div class="item-assignees">
+        ${state.people.map(p => {
+          const assigned = item.assignees.includes(p.id);
+          return `<button class="assignee-btn ${assigned?'assigned':''}" style="${assigned?'background:'+p.color+';border-color:'+p.color:''}" onclick="toggleAssignee(${item.id},${p.id})">
+            <span class="assignee-dot" style="background:${assigned?'rgba(255,255,255,0.7)':p.color}"></span>
+            ${escH(p.name)}
+          </button>`;
+        }).join('')}
+        <span style="font-size:11px;color:var(--ink3);align-self:center;margin-left:4px;">${item.assignees.length===0?'sin asignar':item.assignees.length+' pers.'}</span>
+      </div>
+    </div>`).join('');
+}
+
+function updateStep4Btn() {
+  document.getElementById('btn-step4').disabled = state.items.length === 0;
+}
+
+// ── EXTRAS ──
+function getExtras() {
+  return {
+    tipPct: parseFloat(document.getElementById('tip-pct').value)||0,
+    tipFixed: parseFloat(document.getElementById('tip-fixed').value)||0,
+    discount: parseFloat(document.getElementById('discount').value)||0,
+    taxPct: parseFloat(document.getElementById('tax-pct').value)||0
+  };
+}
+function updateExtrasPreview() {
+  const subtotal = state.items.reduce((s,i) => s+i.price, 0);
+  const e = getExtras();
+  const tip = subtotal*(e.tipPct/100)+e.tipFixed;
+  const tax = subtotal*(e.taxPct/100);
+  const total = subtotal+tip+tax-e.discount;
+  const el = document.getElementById('extras-preview');
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Subtotal</span><span style="font-weight:500;">${fmt(subtotal)}</span></div>
+    ${tip>0?`<div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--green);"><span>Propina</span><span>+${fmt(tip)}</span></div>`:''}
+    ${tax>0?`<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>Impuesto</span><span>+${fmt(tax)}</span></div>`:''}
+    ${e.discount>0?`<div style="display:flex;justify-content:space-between;margin-bottom:4px;color:var(--green);"><span>Descuento</span><span>−${fmt(e.discount)}</span></div>`:''}
+    <hr class="divider"/>
+    <div style="display:flex;justify-content:space-between;font-weight:600;font-size:15px;"><span>Total estimado</span><span>${fmt(total)}</span></div>`;
+}
+
+// ── CALCULATE ──
+function calculate() {
+  const unassigned = state.items.filter(i => i.assignees.length === 0);
+  if (unassigned.length > 0) { showToast(`"${unassigned[0].name}" no tiene nadie asignado`); goStep(3); return; }
+  const e = getExtras();
+  const subtotal = state.items.reduce((s,i)=>s+i.price, 0);
+  const tip = subtotal*(e.tipPct/100)+e.tipFixed;
+  const tax = subtotal*(e.taxPct/100);
+  const extraFactor = subtotal>0 ? (subtotal+tip+tax-e.discount)/subtotal : 1;
+  const totals = {}; const breakdown = {};
+  state.people.forEach(p => { totals[p.id]=0; breakdown[p.id]=[]; });
+  state.items.forEach(item => {
+    const share = item.price/item.assignees.length;
+    item.assignees.forEach(pid => {
+      const adjusted = share*extraFactor;
+      totals[pid]+=adjusted;
+      breakdown[pid].push({ name: item.name, adjusted });
+    });
+  });
+  const grandTotal = Object.values(totals).reduce((s,v)=>s+v, 0);
+  currentStep = 5;
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('visible'));
+  document.getElementById('panel-5').classList.add('visible');
+  document.querySelectorAll('.step-tab').forEach((t,i)=>{
+    t.classList.remove('active','done');
+    if(i+1===5) t.classList.add('active'); else t.classList.add('done');
+  });
+  const content = document.getElementById('result-content');
+  content.innerHTML = `
+    <div class="result-header">
+      <div class="result-icon">✓</div>
+      <div>
+        <div class="result-title">¡Todo dividido!</div>
+        <div class="result-sub">${state.people.length} personas · ${state.items.length} items${state.aiExtracted?' · ✦ escaneado con IA':''}</div>
+      </div>
+    </div>
+    ${state.people.map(p=>`
+      <div class="person-result">
+        <div class="person-result-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='block'?'none':'block'">
+          <div class="person-result-left">
+            <div class="person-avatar" style="background:${p.color};width:32px;height:32px;font-size:13px;">${p.name[0].toUpperCase()}</div>
+            <span class="person-result-name">${escH(p.name)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span class="person-total" style="color:${p.color}">${fmt(totals[p.id])}</span>
+            <span style="color:var(--ink3);font-size:12px;">▾</span>
+          </div>
+        </div>
+        <div class="person-result-items">
+          ${breakdown[p.id].map(it=>`
+            <div class="result-item-line">
+              <span>${escH(it.name)}</span>
+              <span class="result-item-amount">${fmt(it.adjusted)}</span>
+            </div>`).join('')}
+        </div>
+      </div>`).join('')}
+    <div class="total-bar">
+      <div><div class="total-bar-label">Total del recibo</div></div>
+      <div class="total-bar-amount">${fmt(grandTotal)}</div>
+    </div>
+    <div class="share-grid">
+      <button class="btn btn-secondary btn-full" onclick="copyText()">Copiar resumen</button>
+      <button class="btn btn-ghost btn-full" onclick="shareWhatsApp()">WhatsApp</button>
+    </div>`;
+  window._lastTotals=totals; window._lastGrand=grandTotal;
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── SHARE ──
+function buildText() {
+  let txt = '🧾 SplitCeipt\n\n';
+  state.people.forEach(p => { txt += `${p.name}: ${fmt(window._lastTotals[p.id])}\n`; });
+  txt += `\nTotal: ${fmt(window._lastGrand)}\nHecho con SplitCeipt`;
+  return txt;
+}
+function copyText() { navigator.clipboard.writeText(buildText()).then(()=>showToast('¡Copiado!')).catch(()=>showToast('No se pudo copiar')); }
+function shareWhatsApp() { window.open('https://wa.me/?text='+encodeURIComponent(buildText()),'_blank'); }
+
+// ── RESET ──
+function resetAll() {
+  if (!confirm('¿Nueva división? Se borrará todo.')) return;
+  state = { people:[], items:[], scanMode:null, imageBase64:null, imageType:null, aiExtracted:false };
+  renderPeople(); renderItems();
+  ['tip-pct','tip-fixed','discount','tax-pct'].forEach(id=>document.getElementById(id).value=0);
+  document.getElementById('extras-preview').innerHTML='';
+  document.getElementById('ai-detected-summary').style.display='none';
+  document.getElementById('ai-extras-note').style.display='none';
+  document.getElementById('scan-area').style.display='none';
+  document.getElementById('scan-state-area').style.display='none';
+  document.getElementById('drop-zone').style.display='block';
+  document.getElementById('preview-img').style.display='none';
+  document.querySelector('.drop-icon').style.display='block';
+  document.querySelector('.drop-text').style.display='block';
+  document.querySelector('.drop-sub').style.display='block';
+  document.getElementById('opt-scan').classList.remove('active');
+  document.getElementById('opt-manual').classList.remove('active');
+  document.getElementById('btn-scan').disabled=true;
+  goStep(1);
+}
+
+// Init
+renderPeople(); renderItems();
+document.getElementById('person-input').focus();
+</script>
+</body>
+</html>
