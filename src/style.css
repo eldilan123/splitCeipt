@@ -185,3 +185,18 @@ hr.divider { border: none; border-top: 1px solid var(--border2); margin: 14px 0;
   .share-grid { grid-template-columns: 1fr; }
   .add-item-row { grid-template-columns: 1fr 80px auto; }
 }
+
+/* ADS */
+.ad-container {
+  margin-top: 16px;
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--border2);
+}
+.ad-label {
+  font-size: 10px;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-bottom: 6px;
+}
