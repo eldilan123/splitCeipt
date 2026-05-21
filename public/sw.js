@@ -1,4 +1,4 @@
-const CACHE = 'splitceipt-v1'
+const CACHE = 'splitceipt-v2'
 const STATIC = ['/', '/style.css', '/main.js']
 
 self.addEventListener('install', e => {
@@ -19,6 +19,10 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.url.includes('/api/')) return
+  if (e.request.mode === 'navigate') {
+    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)))
+    return
+  }
   e.respondWith(
     caches.match(e.request).then(cached => cached ?? fetch(e.request))
   )

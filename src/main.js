@@ -10,12 +10,13 @@ import { copyText, shareWhatsApp } from './modules/share.js'
 document.querySelectorAll('.step-tab').forEach((tab, i) => {
   tab.addEventListener('click', () => {
     const n = i + 1
-    if (n === 5) {
-      calculate()
-    } else {
+    if (n === 5) return  // never navigate to result via tab
+    if (n === 4) {
       const moved = goStep(n)
-      if (moved && n === 4) updateExtrasPreview()
+      if (moved) updateExtrasPreview()
+      return
     }
+    goStep(n)
   })
 })
 
