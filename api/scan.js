@@ -1,3 +1,22 @@
+// Pass 2: deterministic math so the AI never miscalculates prices.
+// The AI (Pass 1) copies raw numbers from the receipt columns verbatim.
+// This function does all division — precio_unitario = valor / cantidad.
+function expandRows(rows) {
+  const items = []
+  for (const row of rows) {
+    const cantidad = Math.max(1, parseInt(row.cantidad) || 1)
+    const valor = parseFloat(row.valor) || 0
+    const esTotal = row.valor_es_total === true
+    const precioUnitario = esTotal
+      ? Math.round(valor / cantidad)
+      : valor
+    for (let i = 0; i < cantidad; i++) {
+      items.push({ name: row.name, price: precioUnitario })
+    }
+  }
+  return items
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
@@ -46,17 +65,17 @@ export default async function handler(req, res) {
             },
             {
               type: 'text',
-              // PROMPT MAINTENANCE: The "REGLA CRÍTICA DE PRECIOS" block below uses
-              // imperative + prohibition framing (PROHIBIDO, NUNCA, REGLA CRÍTICA) to
-              // override the model's bias to multiply the Valor column by Cantidad.
-              // Keep the qty=1/2/3 examples together and aligned — fragmenting them
-              // back into scattered rules caused the model to double single-quantity
-              // item prices on real receipts. Expected behavior: precio_unitario
-              // always equals Valor ÷ Cantidad, never Valor × Cantidad.
+              // PROMPT MAINTENANCE: Pass 1 — AI reads raw receipt columns verbatim,
+              // no math. Pass 2 (expandRows in JS) does all price calculation.
+              // The AI must NOT divide, multiply, or modify any number it reads.
+              // "valor_es_total" tells expandRows whether to divide by cantidad.
               text: `Analiza este recibo/cuenta de restaurante y extrae TODA la información.
 Responde SOLO con JSON válido, sin markdown, sin texto extra, exactamente así:
 {
-  "items": [{"name": "nombre del item", "price": 12500}],
+  "rows": [
+    {"name": "Bandeja Paisa", "cantidad": 1, "valor": 32000, "valor_es_total": true},
+    {"name": "Limonada de coco", "cantidad": 2, "valor": 18000, "valor_es_total": true}
+  ],
   "tip_pct": 0,
   "tip_fixed": 0,
   "tax_pct": 0,
@@ -68,21 +87,13 @@ Responde SOLO con JSON válido, sin markdown, sin texto extra, exactamente así:
 }
 Reglas:
 - Todos los precios como números sin puntos ni comas ni símbolos de moneda
-
-REGLA CRÍTICA DE PRECIOS - Lee esto con máxima atención:
-La columna "Valor" en el recibo es SIEMPRE el precio total de esa línea ya calculado. NUNCA lo modifiques.
-- precio_unitario = Valor_de_la_columna ÷ Cantidad
-- "1  Papas fritas  $12.000" → un item, precio: 12000
-- "2  Limonada      $18.000" → dos items, precio: 9000 cada uno
-- "3  Cerveza       $24.000" → tres items, precio: 8000 cada uno
-PROHIBIDO: multiplicar, duplicar o alterar el valor de la columna.
-
-Reglas adicionales:
-- Si el precio mostrado ya es unitario (ej: "Coca-Cola x2 $4.500 c/u"), cada entrada = $4.500
-- NUNCA pongas precio 0 en un item detectado.
+- "valor" es EXACTAMENTE el número que aparece en la columna del recibo — no hagas ningún cálculo, cópialo textual.
+- "cantidad" es el número en la columna Cant. — cópialo textual.
+- "valor_es_total": true si el valor de la columna es el total de esa línea (cantidad × unitario). false si es precio unitario. Pista: si hay una columna llamada "Total", "Valor", "Importe" → true. Si dice "P.Unit", "Unitario", "Precio" → false. Si no hay columna de cantidad visible → false (cada línea es 1 item).
+- NO dividas, NO multipliques, NO modifiques ningún número.
 - "PROPINA", "PROPINA SUGERIDA", "TIP", "GRATUITY" siempre van en tip_pct o tip_fixed, NUNCA en tax_pct. "IMPUESTO", "IVA", "TAX" van en tax_pct. Si ves un porcentaje sugerido al final del recibo antes del total, es propina — no impuesto.
 - Si detectas propina como porcentaje, ponla en tip_pct. Si es monto fijo, en tip_fixed
-- Si la imagen no es un recibo, responde con items vacíos y notes explicando
+- Si la imagen no es un recibo, responde con rows vacío y notes explicando
 - Si hay texto ilegible en algún item, usa tu mejor estimación con el nombre "[ilegible]"`
             }
           ]
@@ -99,15 +110,38 @@ Reglas adicionales:
     const clean = text.replace(/```json|```/g, '').trim()
     const parsed = JSON.parse(clean)
 
-    if (Array.isArray(parsed.items)) {
-      parsed.items.forEach(item => {
-        if (!item.price || item.price === 0) {
-          console.warn('scan: item con precio 0 o nulo:', item.name)
-        }
-      })
+    // Pass 2: JS expands rows into individual items with correct unit prices
+    const items = expandRows(parsed.rows || [])
+
+    items.forEach(item => {
+      if (!item.price || item.price === 0) {
+        console.warn('scan: item con precio 0 o nulo:', item.name)
+      }
+    })
+
+    // Sanity check: sum of expanded items vs AI-reported subtotal
+    const sumItems = items.reduce((s, i) => s + i.price, 0)
+    const expectedSubtotal = parsed.subtotal || 0
+    if (expectedSubtotal > 0) {
+      const ratio = sumItems / expectedSubtotal
+      if (ratio < 0.85 || ratio > 1.15) {
+        console.warn('Price sanity check failed:', {
+          sumItems, expectedSubtotal, ratio, rows: parsed.rows
+        })
+      }
     }
 
-    return res.status(200).json(parsed)
+    return res.status(200).json({
+      items,
+      tip_pct: parsed.tip_pct || 0,
+      tip_fixed: parsed.tip_fixed || 0,
+      tax_pct: parsed.tax_pct || 0,
+      discount: parsed.discount || 0,
+      subtotal: parsed.subtotal || 0,
+      total: parsed.total || 0,
+      currency: parsed.currency || 'COP',
+      notes: parsed.notes || ''
+    })
   } catch (err) {
     console.error('scan error:', err)
     return res.status(500).json({ error: true, message: 'Error al procesar el recibo. Intenta de nuevo.' })
