@@ -7,5 +7,7 @@ export const state = {
   aiExtracted: false,
   currentStep: 1,
   lastTotals: {},
-  lastGrand: 0
+  lastGrand: 0,
+  lastShareURL: '',
+  lastBreakdown: {}
 }

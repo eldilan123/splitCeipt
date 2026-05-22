@@ -1,10 +1,12 @@
 import { state } from './state.js'
-import { goStep } from './modules/ui.js'
+import { showToast, goStep } from './modules/ui.js'
 import { addPerson, removePerson, renderPeople, updateStep1Btn } from './modules/people.js'
 import { addItem, removeItem, toggleAssignee, renameItem, repriceItem, renderItems } from './modules/items.js'
 import { selectMode, loadFile, scanReceipt } from './modules/scanner.js'
 import { calculate, updateExtrasPreview } from './modules/calculator.js'
 import { copyText, shareWhatsApp } from './modules/share.js'
+import { decodeResultFromURL, restoreFromPayload } from './modules/sharelink.js'
+import { exportResultAsImage, shareImageNative } from './modules/exportimage.js'
 
 // ── STEP NAVIGATION ──
 document.querySelectorAll('.step-tab').forEach((tab, i) => {
@@ -96,6 +98,20 @@ document.getElementById('btn-scan').addEventListener('click', scanReceipt)
 document.getElementById('result-content').addEventListener('click', e => {
   if (e.target.closest('#btn-copy')) copyText()
   if (e.target.closest('#btn-whatsapp')) shareWhatsApp()
+  if (e.target.closest('#btn-share-link')) {
+    navigator.clipboard.writeText(state.lastShareURL)
+      .then(() => showToast('¡Link copiado!'))
+      .catch(() => showToast('No se pudo copiar'))
+  }
+  if (e.target.closest('#btn-share-image')) {
+    const canvas = exportResultAsImage(
+      state.people,
+      state.lastTotals,
+      state.lastGrand,
+      state.lastBreakdown
+    )
+    shareImageNative(canvas, state.people, state.lastGrand)
+  }
   const header = e.target.closest('.person-result-header')
   if (header) {
     const breakdown = header.nextElementSibling
@@ -144,4 +160,23 @@ renderItems()
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {})
+}
+
+// ── SHARED RESULT VIA URL ──
+const shared = decodeResultFromURL()
+if (shared) {
+  const extras = restoreFromPayload(shared, state)
+  document.getElementById('tip-pct').value = extras.tipPct || 0
+  document.getElementById('tip-fixed').value = extras.tipFixed || 0
+  document.getElementById('discount').value = extras.discount || 0
+  document.getElementById('tax-pct').value = extras.taxPct || 0
+  calculate()
+  const banner = document.createElement('div')
+  banner.className = 'shared-banner'
+  banner.innerHTML = `
+    🔗 Resultado compartido ·
+    <button onclick="this.parentElement.remove()" class="shared-banner-close">
+      Nueva división
+    </button>`
+  document.querySelector('.wrap').prepend(banner)
 }

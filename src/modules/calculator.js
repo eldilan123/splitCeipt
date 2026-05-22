@@ -1,6 +1,7 @@
 import { state } from '../state.js'
 import { fmt, escH } from '../utils.js'
 import { showToast, goStep } from './ui.js'
+import { encodeResultToURL } from './sharelink.js'
 
 export function computeTotals(people, items, extras) {
   const { tipPct, tipFixed, discount, taxPct } = extras
@@ -73,6 +74,8 @@ export function calculate() {
   const { totals, breakdown, grandTotal } = computeTotals(state.people, state.items, getExtras())
   state.lastTotals = totals
   state.lastGrand = grandTotal
+  state.lastBreakdown = breakdown
+  state.lastShareURL = encodeResultToURL(state.people, state.items, totals, grandTotal, getExtras())
   state.currentStep = 5
 
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('visible'))
@@ -115,9 +118,11 @@ export function calculate() {
       <div><div class="total-bar-label">Total · COP</div></div>
       <div class="total-bar-amount">${fmt(grandTotal)}</div>
     </div>
-    <div class="share-grid">
-      <button class="btn btn-secondary btn-full" id="btn-copy">Copiar resumen</button>
-      <button class="btn btn-ghost btn-full" id="btn-whatsapp">WhatsApp</button>
+    <div class="share-grid-2x2">
+      <button class="btn btn-secondary" id="btn-copy">📋 Copiar texto</button>
+      <button class="btn btn-secondary" id="btn-whatsapp">💬 WhatsApp</button>
+      <button class="btn btn-secondary" id="btn-share-link">🔗 Copiar link</button>
+      <button class="btn btn-ai" id="btn-share-image">📸 Guardar imagen</button>
     </div>`
 
   window.scrollTo({ top: 0, behavior: 'smooth' })
