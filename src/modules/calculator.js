@@ -53,7 +53,19 @@ export function updateExtrasPreview() {
 export function calculate() {
   const unassigned = state.items.filter(i => i.assignees.length === 0)
   if (unassigned.length > 0) {
-    showToast(`"${unassigned[0].name}" no tiene nadie asignado`)
+    showToast(`Asigna quién pidió "${unassigned[0].name}" primero`)
+    document.querySelectorAll('.item-row').forEach(row => {
+      const itemId = Number(row.dataset.itemId)
+      const item = state.items.find(i => i.id === itemId)
+      if (item && item.assignees.length === 0) {
+        row.style.border = '2px solid var(--accent)'
+        row.style.boxShadow = '0 0 0 3px rgba(232,69,10,0.15)'
+        setTimeout(() => {
+          row.style.border = ''
+          row.style.boxShadow = ''
+        }, 3000)
+      }
+    })
     goStep(3)
     return
   }
@@ -100,7 +112,7 @@ export function calculate() {
         </div>
       </div>`).join('')}
     <div class="total-bar">
-      <div><div class="total-bar-label">Total del recibo</div></div>
+      <div><div class="total-bar-label">Total · COP</div></div>
       <div class="total-bar-amount">${fmt(grandTotal)}</div>
     </div>
     <div class="share-grid">

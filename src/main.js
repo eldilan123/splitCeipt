@@ -140,7 +140,6 @@ function resetAll() {
 // ── INIT ──
 renderPeople()
 renderItems()
-document.getElementById('person-input').focus()
 
 // ── SERVICE WORKER ──
 if ('serviceWorker' in navigator) {

@@ -24,6 +24,11 @@ export function goStep(n) {
     if (i + 1 === n) t.classList.add('active')
     else if (i + 1 < n) t.classList.add('done')
   })
+  if (n > 1) {
+    document.querySelector('.wrap').classList.add('hero-hidden')
+  } else {
+    document.querySelector('.wrap').classList.remove('hero-hidden')
+  }
   window.scrollTo({ top: 0, behavior: 'smooth' })
   return true
 }

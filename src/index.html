@@ -10,7 +10,6 @@
   <link rel="manifest" href="/manifest.json"/>
   <link rel="icon" type="image/svg+xml" href="/splitceipt-icon.svg"/>
   <meta name="theme-color" content="#E8450A"/>
-  <script src="https://pl29515887.effectivecpmnetwork.com/57/8a/f8/578af86bdaa14440593417b6b8c29771.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -124,26 +123,29 @@
       <div id="ai-extras-note" style="display:none;" class="info-box"></div>
       <div class="extras-grid">
         <div class="extra-field">
-          <label>Propina %</label>
+          <label>Propina (%) ej: 10</label>
           <input type="number" id="tip-pct" placeholder="0" min="0" max="100" value="0"/>
         </div>
         <div class="extra-field">
-          <label>Propina fija $</label>
+          <label>Propina fija ($)</label>
           <div class="currency-input"><span>$</span>
             <input type="number" id="tip-fixed" placeholder="0" min="0" value="0"/>
           </div>
         </div>
         <div class="extra-field">
-          <label>Descuento $</label>
+          <label>Descuento ($)</label>
           <div class="currency-input"><span>$</span>
             <input type="number" id="discount" placeholder="0" min="0" value="0"/>
           </div>
         </div>
         <div class="extra-field">
-          <label>Impuesto %</label>
+          <label>Impuesto (%)</label>
           <input type="number" id="tax-pct" placeholder="0" min="0" max="50" value="0"/>
         </div>
       </div>
+      <p class="extras-hint">
+        💡 Si escaneaste el recibo, la propina ya viene detectada automáticamente
+      </p>
       <hr class="divider"/>
       <div id="extras-preview" style="font-size:13px;color:var(--ink2);"></div>
     </div>
